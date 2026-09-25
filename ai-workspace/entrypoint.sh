@@ -6,15 +6,21 @@ mkdir -p /workspace
 configure_opencode() {
   opencode_config_dir="${XDG_CONFIG_HOME:-/workspace/.config}/opencode"
   mkdir -p "$opencode_config_dir"
-  cat > "$opencode_config_dir/opencode.json" <<'EOF'
+  cat > "opencode.json" <<'EOF'
 {
   "$schema": "https://opencode.ai/config.json",
   "update": "notify",
   "share": "manual",
-  "model": "meta/muse-spark-1.3",
-  "agent": {
-    "build": {
-      "model": "meta/muse-spark-1.3#xhigh"
+  "model": "opencode/muse-spark-1.3-contributor-free",
+  "provider": {
+    "opencode": {
+      "models": {
+        "muse-spark-1.3-contributor-free": {
+          "options": {
+            "reasoningEffort": "xhigh"
+          }
+        }
+      }
     }
   },
   "permission": {
