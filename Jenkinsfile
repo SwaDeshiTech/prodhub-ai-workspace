@@ -50,19 +50,35 @@ pipeline {
                     def imageRepositoryWithRegistry = dockerHubHost ? imageRepository : "${registryHost}/${imageRepository}"
                     def successful = []
                     def failed = []
+                    def reclaimDockerSpace = { imageTag ->
+                        withEnv(["IMAGE_TAG=${imageTag}"]) {
+                            sh '''
+                                set +e
+                                docker image rm -f "$IMAGE_TAG" >/dev/null 2>&1 || true
+                                docker container prune -f >/dev/null 2>&1 || true
+                                docker image prune -af >/dev/null 2>&1 || true
+                                docker builder prune -af >/dev/null 2>&1 || true
+                                docker system df || true
+                            '''
+                        }
+                    }
                     sh '''
                         set -eu
                         mkdir -p artifacts
                         : > artifacts/ai-workspace-images.env
+                        docker container prune -f >/dev/null 2>&1 || true
+                        docker image prune -af >/dev/null 2>&1 || true
+                        docker builder prune -af >/dev/null 2>&1 || true
                     '''
-                    withCredentials([usernamePassword(credentialsId: params.DOCKER_CREDENTIAL_ID.trim(), usernameVariable: 'REGISTRY_USERNAME', passwordVariable: 'REGISTRY_PASSWORD')]) {
-                        withEnv(["REGISTRY_LOGIN_URL=${params.DOCKER_REGISTRY_URL.trim()}"]) {
+                    withEnv(["REGISTRY_LOGIN_URL=${params.DOCKER_REGISTRY_URL.trim()}"]) {
+                        withCredentials([usernamePassword(credentialsId: params.DOCKER_CREDENTIAL_ID.trim(), usernameVariable: 'REGISTRY_USERNAME', passwordVariable: 'REGISTRY_PASSWORD')]) {
                             sh '''
                                 set -eu
                                 export DOCKER_CONFIG="$WORKSPACE/.docker"
                                 mkdir -p "$DOCKER_CONFIG"
                                 printf '%s' "$REGISTRY_PASSWORD" | docker login "$REGISTRY_LOGIN_URL" --username "$REGISTRY_USERNAME" --password-stdin
                             '''
+                        }
                             try {
                                 def variants = sh(
                                     script: '''
@@ -98,7 +114,6 @@ pipeline {
                                                 '
                                                 docker push "$IMAGE_TAG"
                                                 printf 'AI_WORKSPACE_IMAGE=%s\\n' "$IMAGE_TAG" >> artifacts/ai-workspace-images.env
-                                                docker image rm -f "$IMAGE_TAG" || true
                                             '''
                                         }
                                         successful << imageTag
@@ -107,9 +122,8 @@ pipeline {
                                         def message = variantFailure.message ?: variantFailure.toString()
                                         failed << "${variantPath}: ${message}"
                                         echo "Skipping ${variantPath} after failure: ${message}"
-                                        withEnv(["IMAGE_TAG=${imageTag}"]) {
-                                            sh 'docker image rm -f "$IMAGE_TAG" || true'
-                                        }
+                                    } finally {
+                                        reclaimDockerSpace(imageTag)
                                     }
                                 }
                             } finally {
@@ -119,7 +133,6 @@ pipeline {
                                     docker logout "$REGISTRY_LOGIN_URL" >/dev/null 2>&1 || true
                                 '''
                             }
-                        }
                     }
                     writeFile file: 'artifacts/ai-workspace-build-report.txt', text: "Successful images (${successful.size()}):\\n${successful.join('\\n')}\\n\\nFailed images (${failed.size()}):\\n${failed.join('\\n')}\\n"
                     archiveArtifacts artifacts: 'artifacts/ai-workspace-images.env,artifacts/ai-workspace-build-report.txt', fingerprint: true

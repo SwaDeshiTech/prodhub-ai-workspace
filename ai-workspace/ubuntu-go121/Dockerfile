@@ -1,4 +1,4 @@
-FROM ubuntu_go1.21
+FROM golang:1.21-bookworm
 
 ARG OPENCODE_VERSION=1.18.29
 

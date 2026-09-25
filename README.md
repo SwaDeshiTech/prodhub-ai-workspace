@@ -26,3 +26,5 @@ Set PUSH_IMAGE=true to publish the image after building. Image tags follow:
 ## Jenkins
 
 The root `Jenkinsfile` builds, smoke-tests, and publishes every workspace image. Each image runs in its own failure boundary: a failed build or push is recorded and skipped, and the remaining images continue. The Jenkins build finishes as `UNSTABLE` when one or more images fail and archives both the successful image manifest and failure report.
+
+Set `DOCKER_IMAGE_HASH_VALUE` to the target repository, for example `harry2654/prodhub:unused`. The Jenkins credential selected in `DOCKER_CREDENTIAL_ID` must be a Docker Hub access token with write access to that repository.
