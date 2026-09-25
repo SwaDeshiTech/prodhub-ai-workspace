@@ -2,7 +2,7 @@ FROM node:24.10.0-bookworm-slim
 
 ARG OPENCODE_VERSION=1.18.29
 
-ENV PATH="/root/.opencode/bin:${PATH}" \
+ENV PATH="/workspace/.opencode/bin:${PATH}" \
     NPM_CONFIG_PROGRESS=false \
     NPM_CONFIG_AUDIT=false \
     NPM_CONFIG_FUND=false

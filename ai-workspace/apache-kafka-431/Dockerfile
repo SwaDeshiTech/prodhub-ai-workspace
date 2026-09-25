@@ -5,7 +5,7 @@ ARG OPENCODE_VERSION=1.18.29
 ENV PIP_DISABLE_PIP_VERSION_CHECK=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PATH="/root/.opencode/bin:$PATH"
+    PATH="/workspace/.opencode/bin:$PATH"
 
 USER root
 RUN apk add --no-cache python3 git ca-certificates procps bind-tools nodejs npm \

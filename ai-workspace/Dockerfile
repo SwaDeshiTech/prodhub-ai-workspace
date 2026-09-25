@@ -4,7 +4,8 @@ ARG OPENCODE_VERSION=1.18.29
 
 ENV PIP_DISABLE_PIP_VERSION_CHECK=1 \
     PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
+    PYTHONUNBUFFERED=1 \
+    PATH="/workspace/.opencode/bin:${PATH}"
 
 USER root
 # Base images may declare a non-root user; package installation requires root.

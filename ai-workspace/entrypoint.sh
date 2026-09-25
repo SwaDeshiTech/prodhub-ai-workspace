@@ -55,19 +55,21 @@ add_google_api_key_alias() {
   fi
 }
 
-if ! python -c 'import json, os, urllib.request; h={"X-Service-Name":"cloudedge-deployer","uuid":os.environ["AI_USER_ID"]}; t=os.environ.get("AI_PRODHUB_TOKEN"); h["Authorization"]="Bearer "+t if t else None; h={k:v for k,v in h.items() if v}; u=os.environ["AI_PRODHUB_URL"].rstrip("/")+"/credentialProvider/ai-workspace"; d=json.load(urllib.request.urlopen(urllib.request.Request(u, headers=h), timeout=10)); names={"OpenAI":"OPENAI_API_KEY","Gemini":"GEMINI_API_KEY","Anthropic":"ANTHROPIC_API_KEY","DeepSeek":"DEEPSEEK_API_KEY","OpenRouter":"OPENROUTER_API_KEY"}; print("AI credentials received: "+str([{"type":x.get("type"),"keys":sorted(json.loads(x["credentialMetadata"]).keys())} for x in d.get("response",[]) if x.get("credentialMetadata")]), flush=True); out=[]; [out.append(names[x.get("type")]+"="+json.loads(x["credentialMetadata"])["api_key"]) for x in d.get("response",[]) if x.get("credentialMetadata") and x.get("type") in names and json.loads(x["credentialMetadata"]).get("api_key")]; print("AI environment variables: "+str([{"name":v.split("=",1)[0],"configured":bool(v.split("=",1)[1]),"length":len(v.split("=",1)[1])} for v in out]), flush=True); open("/workspace/.ai-env","w").write("\n".join(out)+"\n")'; then
+if ! python -c 'import json, os, urllib.request; h={"X-Service-Name":"cloudedge-deployer","uuid":os.environ["AI_USER_ID"]}; t=os.environ.get("AI_PRODHUB_TOKEN"); h["Authorization"]="Bearer "+t if t else None; h={k:v for k,v in h.items() if v}; u=os.environ["AI_PRODHUB_URL"].rstrip("/")+"/credentialProvider/ai-workspace"; d=json.load(urllib.request.urlopen(urllib.request.Request(u, headers=h), timeout=10)); names={"OpenAI":"OPENAI_API_KEY","Gemini":"GEMINI_API_KEY","Anthropic":"ANTHROPIC_API_KEY","DeepSeek":"DEEPSEEK_API_KEY","OpenRouter":"OPENROUTER_API_KEY","Meta":"META_API_KEY"}; print("AI credentials received: "+str([{"type":x.get("type"),"keys":sorted(json.loads(x["credentialMetadata"]).keys())} for x in d.get("response",[]) if x.get("credentialMetadata")]), flush=True); out=[]; [out.append(names[x.get("type")]+"="+json.loads(x["credentialMetadata"])["api_key"]) for x in d.get("response",[]) if x.get("credentialMetadata") and x.get("type") in names and json.loads(x["credentialMetadata"]).get("api_key")]; print("AI environment variables: "+str([{"name":v.split("=",1)[0],"configured":bool(v.split("=",1)[1]),"length":len(v.split("=",1)[1])} for v in out]), flush=True); open("/workspace/.ai-env","w").write("\n".join(out)+"\n")'; then
   echo "AI credentials could not be loaded; continuing with the workspace available for debugging." >&2
 fi
 add_google_api_key_alias
 
 configure_opencode_command() {
-  opencode_bin="$(command -v opencode 2>/dev/null || true)"
+  opencode_wrapper_dir="/workspace/.opencode/bin"
+  opencode_search_path="${PATH#"$opencode_wrapper_dir:"}"
+  opencode_bin="$(PATH="$opencode_search_path" command -v opencode 2>/dev/null || true)"
   if [ -z "$opencode_bin" ]; then
     return
   fi
 
-  mkdir -p /root/.opencode/bin
-  cat > /root/.opencode/bin/opencode <<EOF
+  mkdir -p "$opencode_wrapper_dir"
+  cat > "$opencode_wrapper_dir/opencode" <<EOF
 #!/bin/sh
 # kubectl exec starts a fresh shell, so load the workspace credentials for OpenCode itself.
 if [ -f /workspace/repository/.env ]; then
@@ -77,7 +79,13 @@ if [ -f /workspace/repository/.env ]; then
 fi
 exec "$opencode_bin" "\$@"
 EOF
-  chmod 0755 /root/.opencode/bin/opencode
+  chmod 0755 "$opencode_wrapper_dir/opencode"
+}
+
+set_workspace_ownership() {
+  if [ "$(id -u)" -eq 0 ]; then
+    chown -R 1001:1001 /workspace/repository
+  fi
 }
 
 if [ "${AI_WORKSPACE_STANDALONE:-false}" = "true" ] || [ -z "${AI_REPOSITORY:-}" ]; then
@@ -86,7 +94,7 @@ if [ "${AI_WORKSPACE_STANDALONE:-false}" = "true" ] || [ -z "${AI_REPOSITORY:-}"
     cp /workspace/.ai-env /workspace/repository/.env
     chmod 0600 /workspace/repository/.env
   fi
-  chown -R 1001:1001 /workspace/repository
+  set_workspace_ownership
   rm -f /workspace/.ai-env
   configure_opencode_command
   echo "Standalone AI workspace ready at /workspace/repository"
@@ -117,7 +125,7 @@ if ! git clone $git_clone_args "$(cat /workspace/.git-url)" /workspace/repositor
 fi
 cp /workspace/.ai-env /workspace/repository/.env
 chmod 0600 /workspace/repository/.env
-chown -R 1001:1001 /workspace/repository
+set_workspace_ownership
 rm -f /workspace/.ai-env /workspace/.scm-credential.json /workspace/.git-token /workspace/.git-askpass /workspace/.git-url
 configure_opencode_command
 echo "Repository ready at /workspace/repository"
@@ -128,4 +136,3 @@ else
   echo "OpenCode CLI is not installed in this workspace image." >&2
 fi
 exec sleep infinity
-
