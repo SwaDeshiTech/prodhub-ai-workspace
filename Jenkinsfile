@@ -63,15 +63,15 @@ pipeline {
                         docker image prune -af >/dev/null 2>&1 || true
                         docker builder prune -af >/dev/null 2>&1 || true
                     '''
-                    withCredentials([usernamePassword(credentialsId: params.DOCKER_CREDENTIAL_ID.trim(), usernameVariable: 'REGISTRY_USERNAME', passwordVariable: 'REGISTRY_PASSWORD')]) {
-                        sh '''
-                            set -eu
-                            export DOCKER_CONFIG="$WORKSPACE/.docker"
-                            mkdir -p "$DOCKER_CONFIG"
-                            printf '%s' "$REGISTRY_PASSWORD" | docker login --username "$REGISTRY_USERNAME" --password-stdin
-                        '''
-                    }
-                    try {
+                    withEnv(["DOCKER_CONFIG=${env.WORKSPACE}/.docker"]) {
+                        withCredentials([usernamePassword(credentialsId: params.DOCKER_CREDENTIAL_ID.trim(), usernameVariable: 'REGISTRY_USERNAME', passwordVariable: 'REGISTRY_PASSWORD')]) {
+                            sh '''
+                                set -eu
+                                mkdir -p "$DOCKER_CONFIG"
+                                printf '%s' "$REGISTRY_PASSWORD" | docker login --username "$REGISTRY_USERNAME" --password-stdin
+                            '''
+                        }
+                        try {
                                 def variants = sh(
                                     script: '''
                                         set -eu
@@ -118,12 +118,12 @@ pipeline {
                                         reclaimDockerSpace(imageTag)
                                     }
                                 }
-                    } finally {
-                        sh '''
-                            set +e
-                            export DOCKER_CONFIG="$WORKSPACE/.docker"
-                            docker logout >/dev/null 2>&1 || true
-                        '''
+                        } finally {
+                            sh '''
+                                set +e
+                                docker logout >/dev/null 2>&1 || true
+                            '''
+                        }
                     }
                     writeFile file: 'artifacts/ai-workspace-build-report.txt', text: "Successful images (${successful.size()}):\\n${successful.join('\\n')}\\n\\nFailed images (${failed.size()}):\\n${failed.join('\\n')}\\n"
                     archiveArtifacts artifacts: 'artifacts/ai-workspace-images.env,artifacts/ai-workspace-build-report.txt', fingerprint: true
