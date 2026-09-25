@@ -21,8 +21,8 @@ RUN apt-get update \
     && npm install --global opencode-ai@${OPENCODE_VERSION} \
     && rm -rf /var/lib/apt/lists/*
 
-ARG ENTRYPOINT_REF=main
-ADD https://raw.githubusercontent.com/SwaDeshiTech/prodhub-ai-workspace/${ENTRYPOINT_REF}/ai-workspace/entrypoint.sh /usr/local/bin/ai-workspace-entrypoint
-RUN chmod 0755 /usr/local/bin/ai-workspace-entrypoint
+ENV AI_WORKSPACE_ENTRYPOINT_REF=main
+COPY ai-workspace/entrypoint-bootstrap.sh /usr/local/bin/ai-workspace-bootstrap
+RUN chmod 0755 /usr/local/bin/ai-workspace-bootstrap
 
-ENTRYPOINT ["/usr/local/bin/ai-workspace-entrypoint"]
+ENTRYPOINT ["/usr/local/bin/ai-workspace-bootstrap"]

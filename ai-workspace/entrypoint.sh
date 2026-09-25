@@ -6,7 +6,7 @@ mkdir -p /workspace
 configure_opencode() {
   opencode_config_dir="${XDG_CONFIG_HOME:-/workspace/.config}/opencode"
   mkdir -p "$opencode_config_dir"
-  cat > "opencode.json" <<'EOF'
+  cat > "$opencode_config_dir/opencode.json" <<'EOF'
 {
   "$schema": "https://opencode.ai/config.json",
   "update": "notify",
