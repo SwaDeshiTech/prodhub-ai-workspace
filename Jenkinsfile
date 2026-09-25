@@ -11,6 +11,7 @@ pipeline {
         string(name: 'GIT_CREDENTIAL', defaultValue: '', description: 'Jenkins SSH credential used for checkout')
         string(name: 'DOCKER_CREDENTIAL_ID', defaultValue: '', description: 'Jenkins Docker Hub username/password credential')
         string(name: 'DOCKER_IMAGE_HASH_VALUE', defaultValue: 'harry2654/prodhub:unused', description: 'Repository and tag seed; the pipeline replaces the tag per image')
+        string(name: 'AI_WORKSPACE_VARIANT', defaultValue: 'all', description: 'Workspace variant to build: all, opencode, or a directory under ai-workspace (for example, node-18-alpine)')
     }
     stages {
         stage('Checkout') {
@@ -87,6 +88,19 @@ pipeline {
                                     ''',
                                     returnStdout: true
                                 ).trim().split('\\n')
+                                def requestedVariant = params.AI_WORKSPACE_VARIANT?.trim() ?: 'all'
+                                if (requestedVariant != 'all') {
+                                    if (!(requestedVariant ==~ /[A-Za-z0-9._-]+/)) {
+                                        error('AI_WORKSPACE_VARIANT must be all, opencode, or a valid variant directory name')
+                                    }
+                                    def requestedPath = requestedVariant == 'opencode'
+                                        ? 'ai-workspace'
+                                        : "ai-workspace/${requestedVariant}"
+                                    variants = variants.findAll { it == requestedPath }
+                                    if (variants.isEmpty()) {
+                                        error("AI_WORKSPACE_VARIANT '${requestedVariant}' is not a supported workspace variant")
+                                    }
+                                }
                                 variants.each { variantPath ->
                                     if (!variantPath?.trim()) { return }
                                     def variantName = variantPath == 'ai-workspace' ? 'opencode' : variantPath.substring('ai-workspace/'.length())
