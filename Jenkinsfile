@@ -116,7 +116,7 @@ pipeline {
                                                 docker run --rm --entrypoint sh "$IMAGE_TAG" -c '
                                                     set -eu
                                                     command -v opencode >/dev/null
-                                                    test -x /usr/local/bin/ai-workspace-entrypoint
+                                                    test -x /usr/local/bin/ai-workspace-bootstrap
                                                 '
                                                 docker push "$IMAGE_TAG"
                                                 printf 'AI_WORKSPACE_IMAGE=%s\\n' "$IMAGE_TAG" >> artifacts/ai-workspace-images.env
