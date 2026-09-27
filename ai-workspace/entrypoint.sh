@@ -47,6 +47,34 @@ write_workspace_instructions() {
 # ProdHub preview requirements
 
 When starting an application in this workspace, listen on \`0.0.0.0\` and use port \`${PORT}\` exactly. Do not select a fallback port. The public preview URL is: ${PRODHUB_PREVIEW_URL:-not assigned}. Keep the application running while the preview is needed.
+
+Before saying the application is ready, verify that it responds locally on the required port. Run the project's available build, lint, or test command when practical, and fix clear failures before reporting completion. Do not claim that a feature works unless you have verified it.
+
+## Static website delivery
+
+When the user asks for a static website, landing page, game, or HTML-only prototype, default to a self-contained \`index.html\`: put the CSS in a \`<style>\` block and the JavaScript in a \`<script>\` block. Do not create local \`.css\` or \`.js\` files unless the user explicitly asks for a multi-file project. This avoids preview-proxy asset-path and MIME-type issues. Serve the directory with an HTTP server on the required port; do not open the HTML file directly.
+
+Use relative asset paths only. Do not use absolute local paths. External assets must use HTTPS and should have a reasonable fallback if they are nonessential.
+
+## Build from an idea
+
+Start with a useful working version rather than waiting for every detail. If a missing detail prevents a meaningful implementation, ask only the smallest set of focused questions about the target user, main features, visual direction, data persistence, authentication, or external integrations.
+
+Choose the lightest suitable stack. Prefer a self-contained static page for simple experiences; introduce a framework, database, or API only when it materially helps the requested outcome or the user asks for it. Keep the project structure clear and add a concise \`README.md\` with run and development instructions for non-trivial projects.
+
+## Existing and persistent workspaces
+
+Inspect the existing repository before changing it. Preserve the user's work, configuration, and dependencies; extend the current project instead of regenerating or replacing it. When a workspace restarts, resume from the existing source and project notes.
+
+## Security and safe changes
+
+Never place credentials, access tokens, or environment-variable values in frontend code, generated pages, commits, terminal output, or summaries. Do not transmit secrets to third-party services. Read existing environment configuration only when needed, and never print secret values.
+
+Ask for confirmation before destructive file operations, database changes, dependency-wide upgrades, Git pushes, publishing, or other external side effects. Do not use \`kubectl\`.
+
+## Completion report
+
+When work is complete, provide a brief report with: what was built or changed; how it was verified; the preview URL; any limitations or required setup; and two or three useful next prompts the user can try. Keep the application running unless the user asks otherwise.
 EOF
 }
 
