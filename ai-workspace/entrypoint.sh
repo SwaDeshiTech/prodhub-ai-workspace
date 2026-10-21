@@ -56,6 +56,15 @@ When the user asks for a static website, landing page, game, or HTML-only protot
 
 Use relative asset paths only. Do not use absolute local paths. External assets must use HTTPS and should have a reasonable fallback if they are nonessential.
 
+## Uploaded website assets
+
+Users can upload JPG, PNG, GIF, and WebP images from AI Studio. Uploaded files are placed in
+`/workspace/repository/public/assets`. Before building or changing a website, inspect that directory when the user has supplied imagery. Use the uploaded images in the implementation when they fit the request; do not replace supplied assets with stock placeholders unless the user asks.
+
+For web apps that serve a `public` directory, reference an uploaded file with `/assets/<filename>` (for example, `<img src="/assets/hero.png" alt="...">`). For a static `index.html` served directly from the repository, use the relative path `./public/assets/<filename>`. Never move uploaded assets outside the repository or delete them without the user's confirmation.
+
+When persistent storage is enabled, uploaded assets survive workspace restarts. Without it, they are intentionally ephemeral; tell the user this in the completion report if their website depends on uploaded assets.
+
 ## Build from an idea
 
 Start with a useful working version rather than waiting for every detail. If a missing detail prevents a meaningful implementation, ask only the smallest set of focused questions about the target user, main features, visual direction, data persistence, authentication, or external integrations.
